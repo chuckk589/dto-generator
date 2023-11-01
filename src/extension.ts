@@ -8,6 +8,66 @@ import * as vscode from 'vscode';
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.languages.registerCodeActionsProvider('typescript', new DTO(), { providedCodeActionKinds: DTO.providedCodeActionKinds }));
+	context.subscriptions.push(vscode.commands.registerCommand('extension.doThing', async (uri: vscode.Uri, rest: vscode.Uri[]) => {
+		let text = "import { PartialType } from '@nestjs/mapped-types';\nimport { IsString, IsNumber, IsBoolean, IsDate, IsArray, IsObject } from 'class-validator';\n";
+		for (const uri of rest) {
+			text += await handleFile(uri);
+		}
+		//create new file
+		const activeTab = vscode.window.activeTextEditor;
+		if (!activeTab) { return; }
+		const dtoPath = path.join(path.dirname(uri.fsPath), 'summary.dto.ts');
+		console.log(dtoPath);
+		const fileUri = vscode.Uri.file(dtoPath);
+		const wsedit = new vscode.WorkspaceEdit();
+		wsedit.createFile(fileUri, { ignoreIfExists: false, contents: new TextEncoder().encode(text) });
+		vscode.workspace.applyEdit(wsedit);
+
+	}));
+}
+
+async function handleFile(uri: vscode.Uri) {
+	const doc = await vscode.workspace.openTextDocument(uri);
+	let text = doc.getText();
+	const properties = text.matchAll(/@Property\((.*)\)\n(.*)[!\?]?:(.*);/g);
+	const className = text.match(/export class (\w+)/)?.[1];
+	//iterate over properties
+	let classContent = '';
+	for (const property of properties) {
+		const optionalType = property[1].match(/columnType: '(.*)'/)?.[1];
+		const name = property[2].replace(/!?/g, '').trim();
+		const type = property[3].split('=')[0].trim();
+		if (name === 'id') { continue; }
+		let decorator = '';
+		switch (type) {
+			case 'string':
+				decorator = '\t@IsString()\n\t';
+				break;
+			case 'number':
+				decorator = '\t@IsNumber()\n\t';
+				break;
+			case 'boolean':
+				decorator = '\t@IsBoolean()\n\t';
+				break;
+			case 'Date':
+				decorator = '\t@IsDate()\n\t';
+				break;
+			case 'Array':
+				decorator = '\t@IsArray()\n\t';
+				break;
+			case 'Object':
+				decorator = '\t@IsObject()\n\t';
+				break;
+			default:
+				decorator = '\t@IsString()\n\t';
+				break;
+		}
+		if (optionalType === 'jsonb') {
+			decorator = '\t@IsString()//TODO: json type support\n\t';
+		}
+		classContent += `${decorator}${name}: ${type};\n\n`;
+	}
+	return `export class Create${className}Dto {\n${classContent}}\nexport class Update${className}Dto extends PartialType(Create${className}Dto) {}\n`;
 }
 
 // This method is called when your extension is deactivated
@@ -58,6 +118,5 @@ export class DTO implements vscode.CodeActionProvider {
 		const fileContent = `export class ${className} {}`;
 		return { className, fileName, dtoPath, fileContent };
 	}
-
 
 }
