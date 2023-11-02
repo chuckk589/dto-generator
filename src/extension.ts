@@ -44,13 +44,13 @@ async function handleFile(uri: vscode.Uri) {
 				decorator = '\t@IsString()\n\t';
 				break;
 			case 'number':
-				decorator = '\t@IsNumber()\n\t';
+				decorator = '\t@IsNumberString()\n\t';
 				break;
 			case 'boolean':
-				decorator = '\t@IsBoolean()\n\t';
+				decorator = '\t@IsBooleanString()\n\t';
 				break;
 			case 'Date':
-				decorator = '\t@IsDate()\n\t';
+				decorator = '\t@IsDateString()\n\t';
 				break;
 			case 'Array':
 				decorator = '\t@IsArray()\n\t';
