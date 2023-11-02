@@ -9,7 +9,7 @@ import * as vscode from 'vscode';
 export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.languages.registerCodeActionsProvider('typescript', new DTO(), { providedCodeActionKinds: DTO.providedCodeActionKinds }));
 	context.subscriptions.push(vscode.commands.registerCommand('extension.doThing', async (uri: vscode.Uri, rest: vscode.Uri[]) => {
-		let text = "import { PartialType } from '@nestjs/mapped-types';\nimport { IsString, IsNumber, IsBoolean, IsDate, IsArray, IsObject } from 'class-validator';\n";
+		let text = "import { PartialType } from '@nestjs/mapped-types';\nimport { IsString, IsNumberString, IsBooleanString, IsDateString, IsArray, IsObject } from 'class-validator';\n";
 		for (const uri of rest) {
 			text += await handleFile(uri);
 		}
@@ -65,7 +65,7 @@ async function handleFile(uri: vscode.Uri) {
 		if (optionalType === 'jsonb') {
 			decorator = '\t@IsString()//TODO: json type support\n\t';
 		}
-		classContent += `${decorator}${name}: ${type};\n\n`;
+		classContent += `${decorator}${name}: string;\n\n`;
 	}
 	return `export class Create${className}Dto {\n${classContent}}\nexport class Update${className}Dto extends PartialType(Create${className}Dto) {}\n`;
 }
